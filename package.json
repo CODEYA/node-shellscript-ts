@@ -6,6 +6,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "bin": {
+    "shellscript-ts": "bin/shellscript-ts"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/CODEYA/node-shellscript-ts.git"
