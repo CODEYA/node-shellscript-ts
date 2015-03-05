@@ -1,10 +1,13 @@
 {
   "name": "shellscript-ts",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A nodejs module for creating shellscript in TypeScript.",
   "main": "bin/shellscript-ts.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "bin": {
+    "shellscript-ts": "bin/shellscript-ts"
   },
   "repository": {
     "type": "git",
