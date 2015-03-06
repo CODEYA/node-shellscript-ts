@@ -6,7 +6,7 @@ A nodejs module for creating shellscript in TypeScript.
 With [npm](https://www.npmjs.com/) do:
 
 ```bash
-$ npm install shellscript-ts
+$ npm install -g shellscript-ts
 ```
 
 # Usage
