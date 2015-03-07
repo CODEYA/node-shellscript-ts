@@ -1,4 +1,11 @@
 /// <reference path="../lib/node-0.11.d.ts" />
+/// <reference path="../node_modules/typescript/bin/typescript.d.ts" />
+
+import crypto = require('crypto');
+import fs     = require("fs");
+import path   = require("path");
+import ts     = require("typescript");
+import vm     = require('vm');
 
 export module ShellScriptTs {
 
@@ -7,11 +14,8 @@ export module ShellScriptTs {
    */
   export class ShellScriptTs {
 
-    private fs = require('fs');
-    private tss = require('typescript-simple');
-    private vm = require('vm');
-    private console = new Console('[shellscript.ts] ');
-    private cache = new Cache('/tmp/shellscript-ts/cache', this.console);
+    private compiler = new TsCompiler();
+    private cache = new Cache('/tmp/shellscript-ts/cache');
     private options = require('optimist')
         .usage('A nodejs module for creating shellscript in TypeScript.\nUsage: $0 [options] file')
         // --no-cache
@@ -32,13 +36,13 @@ export module ShellScriptTs {
         .demand(1);
 
     execute(): void {
-      this.console.log('ShellScriptTs#execute : parsing args...');
+      Console.log('ShellScriptTs#execute : parsing args...');
       var tsPath = this.parseArgs();
 
-      this.console.log('ShellScriptTs#execute : resolving js...');
+      Console.log('ShellScriptTs#execute : resolving js...');
       var jsBody = this.resolveJs(tsPath);
 
-      this.console.log('ShellScriptTs#execute : executing js...');
+      Console.log('ShellScriptTs#execute : executing js...');
       this.executeJs(jsBody);
     }
 
@@ -57,13 +61,13 @@ export module ShellScriptTs {
         process.exit(1);
       }
 
-      this.console.setEnabled(argv.v);
-      this.console.log('ShellScriptTs#parseArgs : verbose=' + argv.v);
+      Console.setEnabled(argv.v);
+      Console.log('ShellScriptTs#parseArgs : verbose=' + argv.v);
 
       this.cache.setEnabled(!argv.n);
-      this.console.log('ShellScriptTs#parseArgs : no-cache=' + argv.n);
+      Console.log('ShellScriptTs#parseArgs : no-cache=' + argv.n);
 
-      this.console.log('ShellScriptTs#parseArgs : script=' + argv._[0]);
+      Console.log('ShellScriptTs#parseArgs : script=' + argv._[0]);
       return argv._[0];
     }
 
@@ -76,32 +80,35 @@ export module ShellScriptTs {
       // read TypeScript file
       var scriptBody = null;
       try {
-        scriptBody = this.fs.readFileSync(tsPath, 'utf-8');
+        scriptBody = fs.readFileSync(tsPath, 'utf-8');
       } catch(e) {
         if (e.code !== 'ENOENT') {
-          this.console.log("ShellScriptTs#resolveJs : failed to read file \"" + tsPath + "\" : " + e);
+          Console.log("ShellScriptTs#resolveJs : failed to read file \"" + tsPath + "\" : " + e);
         } else {
-          this.console.log("ShellScriptTs#resolveJs : file \"" + tsPath + "\" not found");
+          Console.log("ShellScriptTs#resolveJs : file \"" + tsPath + "\" not found");
         }
         process.exit(1);
       }
-      this.console.log('ShellScriptTs#resolveJs : scriptBody ---------------------');
-      this.console.log('\n' + scriptBody);
+      Console.log('ShellScriptTs#resolveJs : scriptBody ---------------------');
+      Console.log('\n' + scriptBody);
 
       // remove shebang
       var tsBody = scriptBody.replace(/^#!.+\n/g, (str) => "");
-      this.console.log('ShellScriptTs#resolveJs : tsBody -------------------------');
-      this.console.log('\n' + tsBody);
+      Console.log('ShellScriptTs#resolveJs : tsBody -------------------------');
+      Console.log('\n' + tsBody);
 
       // prepare JavaScript
       var jsBody = this.cache.fetch(tsPath, tsBody);
       if(jsBody == null) {
-        jsBody = this.tss(tsBody);
-        this.console.log('ShellScriptTs#resolveJs storing cache');
+        var tsPathDir = path.dirname(tsPath);
+        var tsPathFile = path.basename(tsPath);
+        var jsBodies = this.compiler.compile(tsPathDir, tsPathFile, tsBody);
+        jsBody = jsBodies[tsPathFile + ".js"].getSource();
+        Console.log('ShellScriptTs#resolveJs storing cache');
         this.cache.store(tsPath, tsBody, jsBody);
       }
-      this.console.log('ShellScriptTs#resolveJs : jsBody -------------------------');
-      this.console.log('\n' + jsBody);
+      Console.log('ShellScriptTs#resolveJs : jsBody -------------------------');
+      Console.log('\n' + jsBody);
 
       return jsBody;
     }
@@ -110,10 +117,15 @@ export module ShellScriptTs {
      * Executes a JavaScript.
      */
     private executeJs(jsBody:string): void {
-      this.console.log('ShellScriptTs#executeJs : jsBody -------------------------');
-      this.console.log('\n' + jsBody);
+      Console.log('ShellScriptTs#executeJs : jsBody -------------------------');
+      Console.log('\n' + jsBody);
 
-      this.vm.runInThisContext(jsBody);
+      var contextVars = {console: console,
+                         process: process,
+                         require: require};
+      var context = vm.createContext(contextVars);
+
+      vm.runInContext(jsBody, context);
     }
   }
 
@@ -121,24 +133,20 @@ export module ShellScriptTs {
    * Console for ShellScript.ts
    */
   class Console {
-    private prefix:string;
-    private enabled:boolean;
-
-    constructor(prefix:string) {
-      this.prefix = prefix;
-    }
+    static prefix = '[shellscript.ts] ';
+    static enabled:boolean;
 
     /**
      * Sets true if the console enabled.
      */
-    setEnabled(enabled:boolean):void {
+    static setEnabled(enabled:boolean):void {
       this.enabled = enabled;
     }
 
     /**
      * Outputs a message to stdout.
      */
-    log(message:string) {
+    static log(message:string) {
       if(this.enabled) {
         console.log(this.prefix + message);
       }
@@ -149,20 +157,15 @@ export module ShellScriptTs {
    * Cache of JavaScript.
    */
   class Cache {
-    private fs = require('fs');
-    private mkdirp = require('mkdirp');
-    private crypto = require('crypto');
     private cacheDir:string;
     private enabled:boolean;
-    private console:Console;
 
-    constructor(cacheDir:string, console:Console) {
+    constructor(cacheDir:string) {
       this.cacheDir = cacheDir;
-      this.console = console;
 
       // create a cache directory.
       try {
-        this.mkdirp.sync(this.cacheDir);
+        require('mkdirp').sync(this.cacheDir);
       } catch(e) {
         if (e.code !== 'ENOENT') {
           throw e;
@@ -182,23 +185,23 @@ export module ShellScriptTs {
      */
     fetch(tsPath:string, tsBody:string):string {
       if(!this.enabled) {
-        this.console.log("Cache#fetch : fetch skipped.");
+        Console.log("Cache#fetch : fetch skipped.");
         return null;
       }
 
       var cacheId = this.createCacheId(tsPath, tsBody);
-      var cacheFileName = this.cacheDir + "/" + cacheId;
-      this.console.log("Cache#fetch : cacheFileName=" + cacheFileName);
+      var cacheFilename = this.cacheDir + "/" + cacheId;
+      Console.log("Cache#fetch : cacheFilename=" + cacheFilename);
 
       try {
-        var cache = this.fs.readFileSync(cacheFileName, 'utf-8');
-        this.console.log("Cache#fetch : fetched cache");
+        var cache = fs.readFileSync(cacheFilename, 'utf-8');
+        Console.log("Cache#fetch : fetched cache");
         return cache;
       } catch(e) {
         if (e.code !== 'ENOENT') {
           throw e;
         }
-        this.console.log("Cache#fetch : no cache");
+        Console.log("Cache#fetch : no cache");
         return null;
       }
     }
@@ -208,36 +211,149 @@ export module ShellScriptTs {
      */
     store(tsPath:string, tsBody:string, jsBody:string):void {
       if(!this.enabled) {
-        this.console.log("Cache#store : store skipped.");
+        Console.log("Cache#store : store skipped.");
         return;
       }
 
       var cacheId = this.createCacheId(tsPath, tsBody);
-      var cacheFileName = this.cacheDir + "/" + cacheId;
-      this.console.log("Cache#store : cacheFileName=" + cacheFileName);
+      var cacheFilename = this.cacheDir + "/" + cacheId;
+      Console.log("Cache#store : cacheFilename=" + cacheFilename);
 
-      this.fs.writeFile(cacheFileName, jsBody);
-      this.console.log("Cache#store : stored cache");
+      fs.writeFile(cacheFilename, jsBody);
+      Console.log("Cache#store : stored cache");
     }
 
     /**
      * Creates cache ID.
      */
     private createCacheId(tsPath:string, tsBody:string):string {
-      var tsRealPath = this.fs.realpathSync(tsPath);
-      this.console.log("Cache#createCacheId : tsRealPath=" + tsRealPath);
-      var tsFileName = tsRealPath.match(/\/([^/]+)$/);
-      tsFileName = tsFileName[1];
-      this.console.log("Cache#createCacheId : tsFileName=" + tsFileName);
+      var tsRealPath = fs.realpathSync(tsPath);
+      Console.log("Cache#createCacheId : tsRealPath=" + tsRealPath);
+      var tsFilename = path.basename(tsRealPath);
+      Console.log("Cache#createCacheId : tsFilename=" + tsFilename);
 
-      var tsRealPathHash = this.crypto.createHash('sha1').update(tsRealPath).digest('hex');
-      this.console.log("Cache#createCacheId : tsRealPathHash=" + tsRealPathHash);
-      var tsBodyHash = this.crypto.createHash('sha1').update(tsBody).digest('hex');
-      this.console.log("Cache#createCacheId : tsBodyHash=" + tsBodyHash);
+      var tsRealPathHash = crypto.createHash('sha1').update(tsRealPath).digest('hex');
+      Console.log("Cache#createCacheId : tsRealPathHash=" + tsRealPathHash);
+      var tsBodyHash = crypto.createHash('sha1').update(tsBody).digest('hex');
+      Console.log("Cache#createCacheId : tsBodyHash=" + tsBodyHash);
 
-      var cacheId = tsFileName + "." + tsRealPathHash + "." + tsBodyHash;
-      this.console.log("Cache#createCacheId : cacheId=" + cacheId);
+      var cacheId = tsFilename + "." + tsRealPathHash + "." + tsBodyHash;
+      Console.log("Cache#createCacheId : cacheId=" + cacheId);
       return cacheId;
+    }
+  }
+
+  /**
+   * TypeScript compiler.
+   */
+  class TsCompiler {
+
+    /**
+     * Compile TypeScript.
+     */
+    compile(tsPathDir: string, tsPathFile: string, tsBody: string, compilerOptions: ts.CompilerOptions = {}): { [key: string]: CompiledJs; } {
+      var self = this;
+      var libFilename = "lib.d.ts";
+      var libSource = fs.readFileSync(path.join(path.dirname(require.resolve('typescript')), libFilename)).toString();
+      var nodeFilename = "node.d.ts";
+      var nodeSource = fs.readFileSync("./lib/node-0.11.d.ts").toString();
+      var outputs: { [key: string]: CompiledJs; } = {};
+      var compilerHost = {
+        getSourceFile: function (filename, languageVersion) {
+          Console.log("compilerHost#getSourceFile : filename=" + filename);
+          Console.log("compilerHost#getSourceFile : languageVersion=" + languageVersion);
+          var sourceFile = null;
+          if(filename === tsPathFile + ".ts") {
+            sourceFile = ts.createSourceFile(filename, tsBody, compilerOptions.target, "0");
+          } else if(filename === libFilename) {
+            sourceFile = ts.createSourceFile(filename, libSource, compilerOptions.target, "0");
+          } else if(filename === nodeFilename) {
+            sourceFile = ts.createSourceFile(filename, nodeSource, compilerOptions.target, "0");
+          } else {
+            // Find a source file in working directory.
+            sourceFile = self.createSourceFile(tsPathDir, filename, compilerOptions);
+            if(sourceFile === undefined) {
+              // Find a source file in shellscript-ts directory.
+              sourceFile = self.createSourceFile(process.cwd(), filename, compilerOptions);
+            }
+          }
+          Console.log("compilerHost#getSourceFile : sourceFile=" + sourceFile);
+          return sourceFile;
+        },
+        writeFile: function (name, text, writeByteOrderMark) {
+          outputs[name] = new CompiledJs(name, text, writeByteOrderMark);
+        },
+        getDefaultLibFilename: function() { return libFilename; },
+        useCaseSensitiveFileNames: function() { return false; },
+        getCanonicalFileName: function (filename) { return filename; },
+        getCurrentDirectory: function() { return ""; },
+        getNewLine: function() { return "\n"; }
+      };
+      var program = ts.createProgram([tsPathFile + ".ts"], compilerOptions, compilerHost);
+      var errors = program.getDiagnostics();
+      if(!errors.length) {
+        var checker = program.getTypeChecker(true);
+        errors = checker.getDiagnostics();
+        checker.emitFiles();
+        errors.forEach(function(e) { Console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
+      }
+      return outputs;
+    }
+
+    /**
+     * Create the SourceFile.
+     */
+    private createSourceFile(dir: string, file: string, compilerOptions: ts.CompilerOptions): ts.SourceFile {
+      Console.log("TsCompiler#createSourceFile : dir=" + dir);
+      Console.log("TsCompiler#createSourceFile : file=" + file);
+      Console.log("TsCompiler#createSourceFile : compilerOptions=" + compilerOptions);
+      var sourceFile = null;
+      try {
+        sourceFile = ts.createSourceFile(file, fs.readFileSync(path.join(dir, file)).toString(), compilerOptions.target, "0");
+      } catch(e) {
+        if (e.code !== 'ENOENT') {
+          Console.log("TsCompiler#readTsSource : failed to read ts source \"" + dir + "/" + file + "\" : " + e);
+          process.exit(1);
+        } else {
+          Console.log("TsCompiler#readTsSource : ts source \"" + dir + "/" + file + "\" not found");
+          sourceFile = undefined;
+        }
+      }
+      Console.log("TsCompiler#createSourceFile : sourceFile=" + sourceFile);
+      return sourceFile;
+    }
+  }
+
+  /**
+   * Represents a compiled JavaScript information.
+   */
+  class CompiledJs {
+    private filename: string;
+    private source: string;
+    private writeByteOrderMark: string;
+
+    constructor(filename: string, source: string, writeByteOrderMark: string) {
+      this.filename = filename;
+      this.source = source;
+      this.writeByteOrderMark = writeByteOrderMark;
+    }
+
+    /**
+     * Get JavaScript filename.
+     */
+    getFilename(): string {
+      return this.filename;
+    }
+
+    /**
+     * Get JavaScript source.
+     */
+    getSource(): string {
+      return this.source;
+    }
+
+    isWriteByteOrderMark(): string {
+      return this.writeByteOrderMark;
     }
   }
 }
