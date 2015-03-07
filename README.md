@@ -22,9 +22,18 @@ Put a shebang line on top of your shellscript.
 ```typescript
 #!/usr/bin/env shellscript-ts
 
+/// <reference path="node.d.ts" />
+
+import http = require("http");
+
 class HelloWorld {
   constructor() {
-    console.log("Hello, World!!");
+    console.log("Current working directory : " + process.cwd());
+    http.get("http://www.codeya.co.jp/", function(res) {
+      console.log("OK : " + res.statusCode);
+    }).on('error', function(e) {
+      console.log("Error : " + e.message);
+    });
   }
 }
 new HelloWorld();
