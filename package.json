@@ -1,6 +1,6 @@
 {
   "name": "shellscript-ts",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "A nodejs module for creating shellscript in TypeScript.",
   "main": "bin/shellscript-ts.js",
   "scripts": {
@@ -25,9 +25,12 @@
   },
   "homepage": "https://github.com/CODEYA/node-shellscript-ts",
   "dependencies": {
+    "crypto": "0.0.3",
+    "fs": "0.0.2",
     "mkdirp": "^0.5.0",
     "optimist": "^0.6.1",
-    "typescript-simple": "^0.2.0"
+    "typescript-simple": "^0.2.0",
+    "vm": "0.0.1"
   },
   "devDependencies": {
     "gulp": "^3.8.11",
