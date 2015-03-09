@@ -23,7 +23,8 @@ export module ShellScriptTs {
 
     private compiler = new TsCompiler();
     private cache = new Cache('/tmp/shellscript-ts/cache');
-    private options = require('optimist')
+    private Optimist = require('optimist');
+    private options = new this.Optimist(process.argv.slice(2))
         .usage('A nodejs module for creating shellscript in TypeScript.\nUsage: $0 [options] file')
         // --ssts.no-cache
         .describe('ssts.no-cache', 'Do not use cached JavaScript.')
