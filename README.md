@@ -1,11 +1,11 @@
-![CircleCI badge](https://circleci.com/gh/CODEYA/node-shellscript-ts.svg?style=shield&circle-token=22b1f118b0d8681d324ffff0a796cccd4e0ab9d7)
-[![npm version](https://badge.fury.io/js/shellscript-ts.svg)](http://badge.fury.io/js/shellscript-ts)
-![npm downloads](https://img.shields.io/npm/dm/shellscript-ts.svg)
-![npm license](https://img.shields.io/npm/l/shellscript-ts.svg)
-[![Dependency Status](https://gemnasium.com/CODEYA/node-shellscript-ts.svg)](https://gemnasium.com/CODEYA/node-shellscript-ts)
-
 # shellscript-ts
 A nodejs module for creating shellscript in TypeScript.
+
+[![CircleCI badge](https://circleci.com/gh/CODEYA/node-shellscript-ts.svg?style=shield&circle-token=22b1f118b0d8681d324ffff0a796cccd4e0ab9d7)](https://circleci.com/gh/CODEYA/node-shellscript-ts.svg?style=shield&circle-token=22b1f118b0d8681d324ffff0a796cccd4e0ab9d7)
+[![npm version](https://badge.fury.io/js/shellscript-ts.svg)](http://badge.fury.io/js/shellscript-ts)
+[![npm downloads](https://img.shields.io/npm/dm/shellscript-ts.svg)](https://img.shields.io/npm/dm/shellscript-ts.svg)
+[![npm license](https://img.shields.io/npm/l/shellscript-ts.svg)](https://img.shields.io/npm/l/shellscript-ts.svg)
+[![Dependency Status](https://gemnasium.com/CODEYA/node-shellscript-ts.svg)](https://gemnasium.com/CODEYA/node-shellscript-ts)
 
 # Install
 
