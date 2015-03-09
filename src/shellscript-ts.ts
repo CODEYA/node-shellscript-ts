@@ -108,7 +108,16 @@ export module ShellScriptTs {
         var tsPathDir = path.dirname(tsPath);
         var tsPathFile = path.basename(tsPath);
         var jsBodies = this.compiler.compile(tsPathDir, tsPathFile, tsBody);
-        jsBody = jsBodies[tsPathFile + ".js"].getSource();
+        if (!jsBodies[tsPathFile + ".js"]) {
+          // TODO: exception should be raised here.
+          Console.log('ShellScriptTs#resolveJs no jsBodies');
+          process.exit(1);
+        } else {
+          jsBody = "";
+          for(var fileName in jsBodies) {
+            jsBody += jsBodies[fileName].getSource() + "\n";
+          }
+        }
         Console.log('ShellScriptTs#resolveJs storing cache');
         this.cache.store(tsPath, tsBody, jsBody);
       }
