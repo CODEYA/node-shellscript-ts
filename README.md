@@ -2,6 +2,7 @@
 [![npm version](https://badge.fury.io/js/shellscript-ts.svg)](http://badge.fury.io/js/shellscript-ts)
 ![npm downloads](https://img.shields.io/npm/dm/shellscript-ts.svg)
 ![npm license](https://img.shields.io/npm/l/shellscript-ts.svg)
+[![Dependency Status](https://gemnasium.com/CODEYA/node-shellscript-ts.svg)](https://gemnasium.com/CODEYA/node-shellscript-ts)
 
 # shellscript-ts
 A nodejs module for creating shellscript in TypeScript.
