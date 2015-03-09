@@ -302,11 +302,12 @@ export module ShellScriptTs {
       };
       var program = ts.createProgram([tsPathFile + ".ts"], compilerOptions, compilerHost);
       var errors = program.getDiagnostics();
-      if(!errors.length) {
+      errors.forEach(function(e) { console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
+      if(errors.length === 0) {
         var checker = program.getTypeChecker(true);
         errors = checker.getDiagnostics();
         checker.emitFiles();
-        errors.forEach(function(e) { Console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
+        errors.forEach(function(e) { console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
       }
       return outputs;
     }
