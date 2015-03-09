@@ -18,20 +18,17 @@ export module ShellScriptTs {
     private cache = new Cache('/tmp/shellscript-ts/cache');
     private options = require('optimist')
         .usage('A nodejs module for creating shellscript in TypeScript.\nUsage: $0 [options] file')
-        // --no-cache
-        .alias('n', 'no-cache')
-        .describe('n', 'Do not use cached JavaScript.')
-        .default('n', false)
-        // --verbose
-        .alias('v', 'verbose')
-        .describe('v', 'Shows details about the process.')
-        .default('v', false)
-        // --help
-        .alias('h', 'help')
-        .describe('h', 'Print this message')
-        .default('h', false)
-        // --no-cache / --verbose / --help are boolean
-        .boolean(['n','v', 'h'])
+        // --ssts.no-cache
+        .describe('ssts.no-cache', 'Do not use cached JavaScript.')
+        .default('ssts.no-cache', false)
+        // --ssts.verbose
+        .describe('ssts.verbose', 'Shows details about the process.')
+        .default('ssts.verbose', false)
+        // --ssts.help
+        .describe('ssts.help', 'Print this message')
+        .default('ssts.help', false)
+        // --ssts.no-cache / --ssts.verbose / --ssts.help are boolean
+        .boolean(['ssts.no-cache','ssts.verbose', 'ssts.help'])
         // non-option arguments
         .demand(1);
 
@@ -52,7 +49,7 @@ export module ShellScriptTs {
     private parseArgs():string {
       var argv = this.options.argv;
 
-      if (argv.h) {
+      if (argv.ssts["help"]) {
         this.options.showHelp();
         process.exit(1);
       }
@@ -61,11 +58,11 @@ export module ShellScriptTs {
         process.exit(1);
       }
 
-      Console.setEnabled(argv.v);
-      Console.log('ShellScriptTs#parseArgs : verbose=' + argv.v);
+      Console.setEnabled(argv.ssts["verbose"]);
+      Console.log('ShellScriptTs#parseArgs : verbose=' + argv.ssts["verbose"]);
 
-      this.cache.setEnabled(!argv.n);
-      Console.log('ShellScriptTs#parseArgs : no-cache=' + argv.n);
+      this.cache.setEnabled(!argv.ssts["no-cache"]);
+      Console.log('ShellScriptTs#parseArgs : no-cache=' + argv.ssts["no-cache"]);
 
       Console.log('ShellScriptTs#parseArgs : script=' + argv._[0]);
       return argv._[0];
