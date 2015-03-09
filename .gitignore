@@ -3,3 +3,7 @@
 
 # Node.js
 node_modules/
+
+# test
+test/*.js
+test/junitresults.xml

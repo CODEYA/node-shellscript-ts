@@ -1,0 +1,11 @@
+machine:
+  timezone: Asia/Tokyo
+dependencies:
+  pre:
+    - npm install -g gulp
+    - npm install
+  override:
+    - gulp build
+test:
+  override:
+    - gulp test

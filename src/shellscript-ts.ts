@@ -354,5 +354,3 @@ export module ShellScriptTs {
     }
   }
 }
-
-new ShellScriptTs.ShellScriptTs().execute();
