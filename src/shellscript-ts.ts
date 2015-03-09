@@ -10,6 +10,13 @@ import vm     = require('vm');
 export module ShellScriptTs {
 
   /**
+   * Node Modules supposed to be used in ts-shell-script.
+   */
+  var NodeModules: string[] = [
+    'process', 'console', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'setImmediate', 'clearImmediate'
+  ]
+
+  /**
    * Main class of ShellScriptTs
    */
   export class ShellScriptTs {
@@ -40,7 +47,7 @@ export module ShellScriptTs {
       var jsBody = this.resolveJs(tsPath);
 
       Console.log('ShellScriptTs#execute : executing js...');
-      this.executeJs(jsBody);
+      this.executeJs(jsBody, tsPath);
     }
 
     /**
@@ -113,13 +120,19 @@ export module ShellScriptTs {
     /**
      * Executes a JavaScript.
      */
-    private executeJs(jsBody:string): void {
+    private executeJs(jsBody:string, tsPath:string): void {
       Console.log('ShellScriptTs#executeJs : jsBody -------------------------');
       Console.log('\n' + jsBody);
 
-      var contextVars = {console: console,
-                         process: process,
-                         require: require};
+      var contextVars = {
+        require: require
+      }
+      // add node modules
+      NodeModules.forEach((modName) => {
+        contextVars[modName] = eval(modName);
+      })
+      contextVars['__dirname'] = path.dirname(tsPath);
+      contextVars['__filename'] = path.basename(tsPath);
       var context = vm.createContext(contextVars);
 
       vm.runInContext(jsBody, context);
