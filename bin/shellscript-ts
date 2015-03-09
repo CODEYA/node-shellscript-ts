@@ -1,2 +1,3 @@
 #!/usr/bin/env node
-require('./shellscript-ts.js');
+var ssts = require('./shellscript-ts.js');
+new ssts.ShellScriptTs.ShellScriptTs().execute();
