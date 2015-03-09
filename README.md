@@ -1,4 +1,5 @@
 ![CircleCI badge](https://circleci.com/gh/CODEYA/node-shellscript-ts.svg?style=shield&circle-token=22b1f118b0d8681d324ffff0a796cccd4e0ab9d7)
+[![npm version](https://badge.fury.io/js/shellscript-ts.svg)](http://badge.fury.io/js/shellscript-ts)
 
 # shellscript-ts
 A nodejs module for creating shellscript in TypeScript.
