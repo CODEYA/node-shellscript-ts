@@ -53,10 +53,6 @@ export module ShellScriptTs {
         this.options.showHelp();
         process.exit(1);
       }
-      if (argv._.length != 1) {
-        this.options.showHelp();
-        process.exit(1);
-      }
 
       Console.setEnabled(argv.ssts["verbose"]);
       Console.log('ShellScriptTs#parseArgs : verbose=' + argv.ssts["verbose"]);
