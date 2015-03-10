@@ -1,6 +1,6 @@
 {
   "name": "shellscript-ts",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "description": "A nodejs module for creating shellscript in TypeScript.",
   "main": "bin/shellscript-ts.js",
   "scripts": {

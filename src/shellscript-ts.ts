@@ -253,7 +253,7 @@ export module ShellScriptTs {
       var libFilename = "lib.d.ts";
       var libSource = fs.readFileSync(path.join(path.dirname(require.resolve('typescript')), libFilename)).toString();
       var nodeFilename = "node.d.ts";
-      var nodeSource = fs.readFileSync("./lib/node-0.11.d.ts").toString();
+      var nodeSource = fs.readFileSync(path.join(__dirname, "../lib/node-0.11.d.ts")).toString();
       var outputs: { [key: string]: CompiledJs; } = {};
       var compilerHost = {
         getSourceFile: function (filename, languageVersion) {
