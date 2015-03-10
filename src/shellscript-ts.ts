@@ -61,7 +61,11 @@ export module ShellScriptTs {
       Console.log('ShellScriptTs#parseArgs : no-cache=' + argv.ssts["no-cache"]);
 
       Console.log('ShellScriptTs#parseArgs : script=' + argv._[0]);
-      return argv._[0];
+      var target = argv._[0];
+
+      process.argv.shift();
+
+      return target;
     }
 
     /**
