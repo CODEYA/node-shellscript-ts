@@ -53,10 +53,6 @@ export module ShellScriptTs {
         this.options.showHelp();
         process.exit(1);
       }
-      if (argv._.length != 1) {
-        this.options.showHelp();
-        process.exit(1);
-      }
 
       Console.setEnabled(argv.ssts["verbose"]);
       Console.log('ShellScriptTs#parseArgs : verbose=' + argv.ssts["verbose"]);
@@ -65,7 +61,11 @@ export module ShellScriptTs {
       Console.log('ShellScriptTs#parseArgs : no-cache=' + argv.ssts["no-cache"]);
 
       Console.log('ShellScriptTs#parseArgs : script=' + argv._[0]);
-      return argv._[0];
+      var target = argv._[0];
+
+      process.argv.shift();
+
+      return target;
     }
 
     /**
@@ -216,7 +216,7 @@ export module ShellScriptTs {
       var cacheFilename = this.cacheDir + "/" + cacheId;
       Console.log("Cache#store : cacheFilename=" + cacheFilename);
 
-      fs.writeFile(cacheFilename, jsBody);
+      fs.writeFileSync(cacheFilename, jsBody);
       Console.log("Cache#store : stored cache");
     }
 
