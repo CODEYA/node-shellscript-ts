@@ -25,24 +25,68 @@ Put a shebang line on top of your shellscript.
 
 # Sample shellscript
 
+## Parse arguments
+
 ```typescript
 #!/usr/bin/env shellscript-ts
 
 /// <reference path="node.d.ts" />
 
-import http = require("http");
+var options = require('optimist')
+    .usage('Sample script for shellscript-ts.\nUsage: $0 [options] URL')
+    // --help
+    .describe('h', 'Print this message')
+    .alias('h', 'help')
+    .default('h', false)
+    .boolean(['h']);
 
-class HelloWorld {
-  constructor() {
-    console.log("Current working directory : " + process.cwd());
-    http.get("http://www.codeya.co.jp/", function(res) {
-      console.log("OK : " + res.statusCode);
+class ParseArgs {
+
+  execute(): void {
+    var argv = options.argv;
+
+    if (argv.h) {
+      this.options.showHelp();
+      process.exit(1);
+    }
+
+    console.log("argv=", argv);
+  }
+}
+new ParseArgs().execute();
+```
+
+## HTTP GET
+
+```typescript
+#!/usr/bin/env shellscript-ts
+
+/// <reference path="node.d.ts" />
+
+var http = require('http');
+
+class HttpClient {
+
+  execute(): void {
+    var url = process.argv[2];
+
+    http.get(url, function(res) {
+      console.log(res.statusCode);
+      console.log();
+      for (var key in res.headers) {
+        console.log(key + "=" + res.headers[key]);
+      }
+      console.log();
+
+      res.on("data", function(chunk) {
+        console.log("" + chunk);
+      });
     }).on('error', function(e) {
       console.log("Error : " + e.message);
     });
   }
 }
-new HelloWorld();
+new HttpClient().execute();
 ```
 
 # Building
