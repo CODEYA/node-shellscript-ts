@@ -216,7 +216,7 @@ export module ShellScriptTs {
       var cacheFilename = this.cacheDir + "/" + cacheId;
       Console.log("Cache#store : cacheFilename=" + cacheFilename);
 
-      fs.writeFile(cacheFilename, jsBody);
+      fs.writeFileSync(cacheFilename, jsBody);
       Console.log("Cache#store : stored cache");
     }
 
