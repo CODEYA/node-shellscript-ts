@@ -10,13 +10,21 @@ import vm     = require('vm');
 export module ShellScriptTs {
 
   /**
+   * Node Modules supposed to be used in ts-shell-script.
+   */
+  var NodeModules: string[] = [
+    'process', 'console', 'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval', 'setImmediate', 'clearImmediate'
+  ]
+
+  /**
    * Main class of ShellScriptTs
    */
   export class ShellScriptTs {
 
     private compiler = new TsCompiler();
     private cache = new Cache('/tmp/shellscript-ts/cache');
-    private options = require('optimist')
+    private Optimist = require('optimist');
+    private options = new this.Optimist(process.argv.slice(2))
         .usage('A nodejs module for creating shellscript in TypeScript.\nUsage: $0 [options] file')
         // --ssts.no-cache
         .describe('ssts.no-cache', 'Do not use cached JavaScript.')
@@ -40,7 +48,7 @@ export module ShellScriptTs {
       var jsBody = this.resolveJs(tsPath);
 
       Console.log('ShellScriptTs#execute : executing js...');
-      this.executeJs(jsBody);
+      this.executeJs(jsBody, tsPath);
     }
 
     /**
@@ -100,7 +108,16 @@ export module ShellScriptTs {
         var tsPathDir = path.dirname(tsPath);
         var tsPathFile = path.basename(tsPath);
         var jsBodies = this.compiler.compile(tsPathDir, tsPathFile, tsBody);
-        jsBody = jsBodies[tsPathFile + ".js"].getSource();
+        if (!jsBodies[tsPathFile + ".js"]) {
+          // TODO: exception should be raised here.
+          Console.log('ShellScriptTs#resolveJs no jsBodies');
+          process.exit(1);
+        } else {
+          jsBody = "";
+          for(var fileName in jsBodies) {
+            jsBody += jsBodies[fileName].getSource() + "\n";
+          }
+        }
         Console.log('ShellScriptTs#resolveJs storing cache');
         this.cache.store(tsPath, tsBody, jsBody);
       }
@@ -113,13 +130,19 @@ export module ShellScriptTs {
     /**
      * Executes a JavaScript.
      */
-    private executeJs(jsBody:string): void {
+    private executeJs(jsBody:string, tsPath:string): void {
       Console.log('ShellScriptTs#executeJs : jsBody -------------------------');
       Console.log('\n' + jsBody);
 
-      var contextVars = {console: console,
-                         process: process,
-                         require: require};
+      var contextVars = {
+        require: require
+      }
+      // add node modules
+      NodeModules.forEach((modName) => {
+        contextVars[modName] = eval(modName);
+      })
+      contextVars['__dirname'] = path.dirname(tsPath);
+      contextVars['__filename'] = path.basename(tsPath);
       var context = vm.createContext(contextVars);
 
       vm.runInContext(jsBody, context);
@@ -288,11 +311,12 @@ export module ShellScriptTs {
       };
       var program = ts.createProgram([tsPathFile + ".ts"], compilerOptions, compilerHost);
       var errors = program.getDiagnostics();
-      if(!errors.length) {
+      errors.forEach(function(e) { console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
+      if(errors.length === 0) {
         var checker = program.getTypeChecker(true);
         errors = checker.getDiagnostics();
         checker.emitFiles();
-        errors.forEach(function(e) { Console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
+        errors.forEach(function(e) { console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
       }
       return outputs;
     }
