@@ -315,8 +315,11 @@ export module ShellScriptTs {
       if(errors.length === 0) {
         var checker = program.getTypeChecker(true);
         errors = checker.getDiagnostics();
+        if(errors.length) {
+          errors.forEach(function(e) { console.log("TsCompiler#typechecker : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
+          process.exit(1);
+        }
         checker.emitFiles();
-        errors.forEach(function(e) { console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
       }
       return outputs;
     }
