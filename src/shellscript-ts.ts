@@ -107,7 +107,7 @@ export module ShellScriptTs {
       if(jsBody == null) {
         var tsPathDir = path.dirname(tsPath);
         var tsPathFile = path.basename(tsPath);
-        var jsBodies = this.compiler.compile(tsPathDir, tsPathFile, tsBody);
+        var jsBodies = this.compiler.compile(tsPathDir, tsPathFile, tsBody, {target: ts.ScriptTarget.ES6});
         if (!jsBodies[tsPathFile + ".js"]) {
           // TODO: exception should be raised here.
           Console.log('ShellScriptTs#resolveJs no jsBodies');
@@ -278,17 +278,17 @@ export module ShellScriptTs {
       var nodeFilename = "node.d.ts";
       var nodeSource = fs.readFileSync(path.join(__dirname, "../lib/node-0.11.d.ts")).toString();
       var outputs: { [key: string]: CompiledJs; } = {};
-      var compilerHost = {
+      var compilerHost: ts.CompilerHost = {
         getSourceFile: function (filename, languageVersion) {
           Console.log("compilerHost#getSourceFile : filename=" + filename);
           Console.log("compilerHost#getSourceFile : languageVersion=" + languageVersion);
           var sourceFile = null;
           if(filename === tsPathFile + ".ts") {
-            sourceFile = ts.createSourceFile(filename, tsBody, compilerOptions.target, "0");
+            sourceFile = ts.createSourceFile(filename, tsBody, compilerOptions.target, false);
           } else if(filename === libFilename) {
-            sourceFile = ts.createSourceFile(filename, libSource, compilerOptions.target, "0");
+            sourceFile = ts.createSourceFile(filename, libSource, compilerOptions.target, false);
           } else if(filename === nodeFilename) {
-            sourceFile = ts.createSourceFile(filename, nodeSource, compilerOptions.target, "0");
+            sourceFile = ts.createSourceFile(filename, nodeSource, compilerOptions.target, false);
           } else {
             // Find a source file in working directory.
             sourceFile = self.createSourceFile(tsPathDir, filename, compilerOptions);
@@ -303,14 +303,28 @@ export module ShellScriptTs {
         writeFile: function (name, text, writeByteOrderMark) {
           outputs[name] = new CompiledJs(name, text, writeByteOrderMark);
         },
-        getDefaultLibFilename: function() { return libFilename; },
+        getDefaultLibFileName: function(options: ts.CompilerOptions) { return libFilename; },
         useCaseSensitiveFileNames: function() { return false; },
         getCanonicalFileName: function (filename) { return filename; },
         getCurrentDirectory: function() { return ""; },
         getNewLine: function() { return "\n"; }
       };
       var program = ts.createProgram([tsPathFile + ".ts"], compilerOptions, compilerHost);
-      var errors = program.getDiagnostics();
+      var emitResult = program.emit();
+
+      var allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+      allDiagnostics.forEach(diagnostic => {
+        var lineAndCharacter = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+        var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+        console.log("${diagnostic.file.fileName} (${lineAndCharacter.line + 1},${lineAndCharacter.character + 1}): ${message}");
+      });
+
+      var exitCode = emitResult.emitSkipped ? 1 : 0;
+      console.log("Process exiting with code '${exitCode}'.");
+      //process.exit(exitCode);
+
+      /*
+      var errors = program.getDiagnosticsProducingTypeChecker();
       errors.forEach(function(e) { console.log("TsCompiler#compile : error " + e.file.filename + "(" + e.file.getLineAndCharacterFromPosition(e.start).line + "): " + e.messageText); });
       if(errors.length === 0) {
         var checker = program.getTypeChecker(true);
@@ -321,6 +335,7 @@ export module ShellScriptTs {
         }
         checker.emitFiles();
       }
+      */
       return outputs;
     }
 
@@ -333,7 +348,7 @@ export module ShellScriptTs {
       Console.log("TsCompiler#createSourceFile : compilerOptions=" + compilerOptions);
       var sourceFile = null;
       try {
-        sourceFile = ts.createSourceFile(file, fs.readFileSync(path.join(dir, file)).toString(), compilerOptions.target, "0");
+        sourceFile = ts.createSourceFile(file, fs.readFileSync(path.join(dir, file)).toString(), compilerOptions.target, false);
       } catch(e) {
         if (e.code !== 'ENOENT') {
           Console.log("TsCompiler#readTsSource : failed to read ts source \"" + dir + "/" + file + "\" : " + e);
@@ -354,9 +369,9 @@ export module ShellScriptTs {
   class CompiledJs {
     private filename: string;
     private source: string;
-    private writeByteOrderMark: string;
+    private writeByteOrderMark: boolean;
 
-    constructor(filename: string, source: string, writeByteOrderMark: string) {
+    constructor(filename: string, source: string, writeByteOrderMark: boolean) {
       this.filename = filename;
       this.source = source;
       this.writeByteOrderMark = writeByteOrderMark;
@@ -376,7 +391,7 @@ export module ShellScriptTs {
       return this.source;
     }
 
-    isWriteByteOrderMark(): string {
+    isWriteByteOrderMark(): boolean {
       return this.writeByteOrderMark;
     }
   }

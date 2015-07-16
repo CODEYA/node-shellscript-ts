@@ -3,7 +3,7 @@ var $ = require('gulp-load-plugins')();
 var reporters = require('jasmine-reporters');
 
 var tsProject = $.typescript.createProject({
-    target: "ES5",              // Specify ECMAScript target version: 'ES3' (default), 'ES5' or 'ES6'.
+    target: "ES6",              // Specify ECMAScript target version: 'ES3' (default), 'ES5' or 'ES6'.
     declarationFiles: true,     // Generates corresponding .d.ts files.
     removeComments: true,       // Do not emit comments to output.
     module: 'commonjs',         // Specify module code generation: 'commonjs' or 'amd'
@@ -15,11 +15,6 @@ var tsProject = $.typescript.createProject({
 gulp.task('build', function() {
     return gulp.src('src/*.ts')
         .pipe($.typescript(tsProject))
-        .pipe($.uglify({
-            mangle: true,           // Pass false to skip mangling names.
-            compress: true,         // Pass an object to specify custom compressor options. Pass false to skip compression completely.
-            preserveComments: "all" // A convenience option for options.output.comments. Defaults to preserving no comments. all / some / function
-        }))
         .pipe(gulp.dest('bin'));
 });
 
@@ -38,7 +33,6 @@ gulp.task('test', ['test-compile'], function () {
           savePath: './test',
         })
       }));
-
 });
 
 gulp.task('default', ['build']);
