@@ -1,6 +1,6 @@
 {
   "name": "shellscript-ts",
-  "version": "1.0.12",
+  "version": "1.0.13",
   "description": "A nodejs module for creating shellscript in TypeScript.",
   "main": "bin/shellscript-ts.js",
   "scripts": {
@@ -33,12 +33,12 @@
     "vm": "0.0.1"
   },
   "devDependencies": {
-    "gulp": "^3.8.11",
-    "gulp-jasmine": "^2.0.0",
+    "gulp": "^3.9.0",
+    "gulp-jasmine": "^2.0.1",
     "gulp-load-plugins": "^0.8.1",
-    "gulp-typescript": "^2.4.2",
-    "gulp-uglify": "^1.1.0",
-    "jasmine-reporters": "^2.0.4",
-    "rimraf": "^2.3.1"
+    "gulp-typescript": "^2.7.8",
+    "gulp-uglify": "^1.2.0",
+    "jasmine-reporters": "^2.0.7",
+    "rimraf": "^2.4.1"
   }
 }

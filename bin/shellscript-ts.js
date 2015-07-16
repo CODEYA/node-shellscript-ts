@@ -1,1 +1,287 @@
-var crypto=require("crypto"),fs=require("fs"),path=require("path"),ts=require("typescript"),vm=require("vm"),ShellScriptTs;!function(_ShellScriptTs){var NodeModules=["process","console","setTimeout","clearTimeout","setInterval","clearInterval","setImmediate","clearImmediate"],ShellScriptTs=function(){function ShellScriptTs(){this.compiler=new TsCompiler,this.cache=new Cache("/tmp/shellscript-ts/cache"),this.Optimist=require("optimist"),this.options=new this.Optimist(process.argv.slice(2)).usage("A nodejs module for creating shellscript in TypeScript.\nUsage: $0 [options] file").describe("ssts.no-cache","Do not use cached JavaScript.")["default"]("ssts.no-cache",!1).describe("ssts.verbose","Shows details about the process.")["default"]("ssts.verbose",!1).describe("ssts.help","Print this message")["default"]("ssts.help",!1)["boolean"](["ssts.no-cache","ssts.verbose","ssts.help"]).demand(1)}return ShellScriptTs.prototype.execute=function(){Console.log("ShellScriptTs#execute : parsing args...");var e=this.parseArgs();Console.log("ShellScriptTs#execute : resolving js...");var t=this.resolveJs(e);Console.log("ShellScriptTs#execute : executing js..."),this.executeJs(t,e)},ShellScriptTs.prototype.parseArgs=function(){var e=this.options.argv;e.ssts.help&&(this.options.showHelp(),process.exit(1)),Console.setEnabled(e.ssts.verbose),Console.log("ShellScriptTs#parseArgs : verbose="+e.ssts.verbose),this.cache.setEnabled(!e.ssts["no-cache"]),Console.log("ShellScriptTs#parseArgs : no-cache="+e.ssts["no-cache"]),Console.log("ShellScriptTs#parseArgs : script="+e._[0]);var t=e._[0];return process.argv.shift(),t},ShellScriptTs.prototype.resolveJs=function(e){var t=null;try{t=fs.readFileSync(e,"utf-8")}catch(o){Console.log("ENOENT"!==o.code?'ShellScriptTs#resolveJs : failed to read file "'+e+'" : '+o:'ShellScriptTs#resolveJs : file "'+e+'" not found'),process.exit(1)}Console.log("ShellScriptTs#resolveJs : scriptBody ---------------------"),Console.log("\n"+t);var s=t.replace(/^#!.+\n/g,function(){return""});Console.log("ShellScriptTs#resolveJs : tsBody -------------------------"),Console.log("\n"+s);var r=this.cache.fetch(e,s);if(null==r){var i=path.dirname(e),l=path.basename(e),c=this.compiler.compile(i,l,s);if(c[l+".js"]){r="";for(var n in c)r+=c[n].getSource()+"\n"}else Console.log("ShellScriptTs#resolveJs no jsBodies"),process.exit(1);Console.log("ShellScriptTs#resolveJs storing cache"),this.cache.store(e,s,r)}return Console.log("ShellScriptTs#resolveJs : jsBody -------------------------"),Console.log("\n"+r),r},ShellScriptTs.prototype.executeJs=function(jsBody,tsPath){Console.log("ShellScriptTs#executeJs : jsBody -------------------------"),Console.log("\n"+jsBody);var contextVars={require:require};NodeModules.forEach(function(modName){contextVars[modName]=eval(modName)}),contextVars.__dirname=path.dirname(tsPath),contextVars.__filename=path.basename(tsPath);var context=vm.createContext(contextVars);vm.runInContext(jsBody,context)},ShellScriptTs}();_ShellScriptTs.ShellScriptTs=ShellScriptTs;var Console=function(){function e(){}return e.setEnabled=function(e){this.enabled=e},e.log=function(e){this.enabled&&console.log(this.prefix+e)},e.prefix="[shellscript.ts] ",e}(),Cache=function(){function e(e){this.cacheDir=e;try{require("mkdirp").sync(this.cacheDir)}catch(t){if("ENOENT"!==t.code)throw t}}return e.prototype.setEnabled=function(e){this.enabled=e},e.prototype.fetch=function(e,t){if(!this.enabled)return Console.log("Cache#fetch : fetch skipped."),null;var o=this.createCacheId(e,t),s=this.cacheDir+"/"+o;Console.log("Cache#fetch : cacheFilename="+s);try{var r=fs.readFileSync(s,"utf-8");return Console.log("Cache#fetch : fetched cache"),r}catch(i){if("ENOENT"!==i.code)throw i;return Console.log("Cache#fetch : no cache"),null}},e.prototype.store=function(e,t,o){if(!this.enabled)return void Console.log("Cache#store : store skipped.");var s=this.createCacheId(e,t),r=this.cacheDir+"/"+s;Console.log("Cache#store : cacheFilename="+r),fs.writeFileSync(r,o),Console.log("Cache#store : stored cache")},e.prototype.createCacheId=function(e,t){var o=fs.realpathSync(e);Console.log("Cache#createCacheId : tsRealPath="+o);var s=path.basename(o);Console.log("Cache#createCacheId : tsFilename="+s);var r=crypto.createHash("sha1").update(o).digest("hex");Console.log("Cache#createCacheId : tsRealPathHash="+r);var i=crypto.createHash("sha1").update(t).digest("hex");Console.log("Cache#createCacheId : tsBodyHash="+i);var l=s+"."+r+"."+i;return Console.log("Cache#createCacheId : cacheId="+l),l},e}(),TsCompiler=function(){function e(){}return e.prototype.compile=function(e,t,o,s){void 0===s&&(s={});var r=this,i="lib.d.ts",l=fs.readFileSync(path.join(path.dirname(require.resolve("typescript")),i)).toString(),c="node.d.ts",n=fs.readFileSync(path.join(__dirname,"../lib/node-0.11.d.ts")).toString(),a={},h={getSourceFile:function(a,h){Console.log("compilerHost#getSourceFile : filename="+a),Console.log("compilerHost#getSourceFile : languageVersion="+h);var p=null;return a===t+".ts"?p=ts.createSourceFile(a,o,s.target,"0"):a===i?p=ts.createSourceFile(a,l,s.target,"0"):a===c?p=ts.createSourceFile(a,n,s.target,"0"):(p=r.createSourceFile(e,a,s),void 0===p&&(p=r.createSourceFile(process.cwd(),a,s))),Console.log("compilerHost#getSourceFile : sourceFile="+p),p},writeFile:function(e,t,o){a[e]=new CompiledJs(e,t,o)},getDefaultLibFilename:function(){return i},useCaseSensitiveFileNames:function(){return!1},getCanonicalFileName:function(e){return e},getCurrentDirectory:function(){return""},getNewLine:function(){return"\n"}},p=ts.createProgram([t+".ts"],s,h),u=p.getDiagnostics();if(u.forEach(function(e){console.log("TsCompiler#compile : error "+e.file.filename+"("+e.file.getLineAndCharacterFromPosition(e.start).line+"): "+e.messageText)}),0===u.length){var d=p.getTypeChecker(!0);u=d.getDiagnostics(),u.length&&(u.forEach(function(e){console.log("TsCompiler#typechecker : error "+e.file.filename+"("+e.file.getLineAndCharacterFromPosition(e.start).line+"): "+e.messageText)}),process.exit(1)),d.emitFiles()}return a},e.prototype.createSourceFile=function(e,t,o){Console.log("TsCompiler#createSourceFile : dir="+e),Console.log("TsCompiler#createSourceFile : file="+t),Console.log("TsCompiler#createSourceFile : compilerOptions="+o);var s=null;try{s=ts.createSourceFile(t,fs.readFileSync(path.join(e,t)).toString(),o.target,"0")}catch(r){"ENOENT"!==r.code?(Console.log('TsCompiler#readTsSource : failed to read ts source "'+e+"/"+t+'" : '+r),process.exit(1)):(Console.log('TsCompiler#readTsSource : ts source "'+e+"/"+t+'" not found'),s=void 0)}return Console.log("TsCompiler#createSourceFile : sourceFile="+s),s},e}(),CompiledJs=function(){function e(e,t,o){this.filename=e,this.source=t,this.writeByteOrderMark=o}return e.prototype.getFilename=function(){return this.filename},e.prototype.getSource=function(){return this.source},e.prototype.isWriteByteOrderMark=function(){return this.writeByteOrderMark},e}()}(ShellScriptTs=exports.ShellScriptTs||(exports.ShellScriptTs={}));
+var crypto = require('crypto');
+var fs = require("fs");
+var path = require("path");
+var ts = require("typescript");
+var vm = require('vm');
+var ShellScriptTs;
+(function (_ShellScriptTs) {
+    var NodeModules = [
+        'process',
+        'console',
+        'setTimeout',
+        'clearTimeout',
+        'setInterval',
+        'clearInterval',
+        'setImmediate',
+        'clearImmediate'
+    ];
+    var ShellScriptTs = (function () {
+        function ShellScriptTs() {
+            this.compiler = new TsCompiler();
+            this.cache = new Cache('/tmp/shellscript-ts/cache');
+            this.Optimist = require('optimist');
+            this.options = new this.Optimist(process.argv.slice(2)).usage('A nodejs module for creating shellscript in TypeScript.\nUsage: $0 [options] file').describe('ssts.no-cache', 'Do not use cached JavaScript.').default('ssts.no-cache', false).describe('ssts.verbose', 'Shows details about the process.').default('ssts.verbose', false).describe('ssts.help', 'Print this message').default('ssts.help', false).boolean(['ssts.no-cache', 'ssts.verbose', 'ssts.help']).demand(1);
+        }
+        ShellScriptTs.prototype.execute = function () {
+            Console.log('ShellScriptTs#execute : parsing args...');
+            var tsPath = this.parseArgs();
+            Console.log('ShellScriptTs#execute : resolving js...');
+            var jsBody = this.resolveJs(tsPath);
+            Console.log('ShellScriptTs#execute : executing js...');
+            this.executeJs(jsBody, tsPath);
+        };
+        ShellScriptTs.prototype.parseArgs = function () {
+            var argv = this.options.argv;
+            if (argv.ssts["help"]) {
+                this.options.showHelp();
+                process.exit(1);
+            }
+            Console.setEnabled(argv.ssts["verbose"]);
+            Console.log('ShellScriptTs#parseArgs : verbose=' + argv.ssts["verbose"]);
+            this.cache.setEnabled(!argv.ssts["no-cache"]);
+            Console.log('ShellScriptTs#parseArgs : no-cache=' + argv.ssts["no-cache"]);
+            Console.log('ShellScriptTs#parseArgs : script=' + argv._[0]);
+            var target = argv._[0];
+            process.argv.shift();
+            return target;
+        };
+        ShellScriptTs.prototype.resolveJs = function (tsPath) {
+            var scriptBody = null;
+            try {
+                scriptBody = fs.readFileSync(tsPath, 'utf-8');
+            }
+            catch (e) {
+                if (e.code !== 'ENOENT') {
+                    Console.log("ShellScriptTs#resolveJs : failed to read file \"" + tsPath + "\" : " + e);
+                }
+                else {
+                    Console.log("ShellScriptTs#resolveJs : file \"" + tsPath + "\" not found");
+                }
+                process.exit(1);
+            }
+            Console.log('ShellScriptTs#resolveJs : scriptBody ---------------------');
+            Console.log('\n' + scriptBody);
+            var tsBody = scriptBody.replace(/^#!.+\n/g, function (str) { return ""; });
+            Console.log('ShellScriptTs#resolveJs : tsBody -------------------------');
+            Console.log('\n' + tsBody);
+            var jsBody = this.cache.fetch(tsPath, tsBody);
+            if (jsBody == null) {
+                var tsPathDir = path.dirname(tsPath);
+                var tsPathFile = path.basename(tsPath);
+                var jsBodies = this.compiler.compile(tsPathDir, tsPathFile, tsBody, { target: 2 /* ES6 */ });
+                if (!jsBodies[tsPathFile + ".js"]) {
+                    Console.log('ShellScriptTs#resolveJs no jsBodies');
+                    process.exit(1);
+                }
+                else {
+                    jsBody = "";
+                    for (var fileName in jsBodies) {
+                        jsBody += jsBodies[fileName].getSource() + "\n";
+                    }
+                }
+                Console.log('ShellScriptTs#resolveJs storing cache');
+                this.cache.store(tsPath, tsBody, jsBody);
+            }
+            Console.log('ShellScriptTs#resolveJs : jsBody -------------------------');
+            Console.log('\n' + jsBody);
+            return jsBody;
+        };
+        ShellScriptTs.prototype.executeJs = function (jsBody, tsPath) {
+            Console.log('ShellScriptTs#executeJs : jsBody -------------------------');
+            Console.log('\n' + jsBody);
+            var contextVars = {
+                require: require
+            };
+            NodeModules.forEach(function (modName) {
+                contextVars[modName] = eval(modName);
+            });
+            contextVars['__dirname'] = path.dirname(tsPath);
+            contextVars['__filename'] = path.basename(tsPath);
+            var context = vm.createContext(contextVars);
+            vm.runInContext(jsBody, context);
+        };
+        return ShellScriptTs;
+    })();
+    _ShellScriptTs.ShellScriptTs = ShellScriptTs;
+    var Console = (function () {
+        function Console() {
+        }
+        Console.setEnabled = function (enabled) {
+            this.enabled = enabled;
+        };
+        Console.log = function (message) {
+            if (this.enabled) {
+                console.log(this.prefix + message);
+            }
+        };
+        Console.prefix = '[shellscript.ts] ';
+        return Console;
+    })();
+    var Cache = (function () {
+        function Cache(cacheDir) {
+            this.cacheDir = cacheDir;
+            try {
+                require('mkdirp').sync(this.cacheDir);
+            }
+            catch (e) {
+                if (e.code !== 'ENOENT') {
+                    throw e;
+                }
+            }
+        }
+        Cache.prototype.setEnabled = function (enabled) {
+            this.enabled = enabled;
+        };
+        Cache.prototype.fetch = function (tsPath, tsBody) {
+            if (!this.enabled) {
+                Console.log("Cache#fetch : fetch skipped.");
+                return null;
+            }
+            var cacheId = this.createCacheId(tsPath, tsBody);
+            var cacheFilename = this.cacheDir + "/" + cacheId;
+            Console.log("Cache#fetch : cacheFilename=" + cacheFilename);
+            try {
+                var cache = fs.readFileSync(cacheFilename, 'utf-8');
+                Console.log("Cache#fetch : fetched cache");
+                return cache;
+            }
+            catch (e) {
+                if (e.code !== 'ENOENT') {
+                    throw e;
+                }
+                Console.log("Cache#fetch : no cache");
+                return null;
+            }
+        };
+        Cache.prototype.store = function (tsPath, tsBody, jsBody) {
+            if (!this.enabled) {
+                Console.log("Cache#store : store skipped.");
+                return;
+            }
+            var cacheId = this.createCacheId(tsPath, tsBody);
+            var cacheFilename = this.cacheDir + "/" + cacheId;
+            Console.log("Cache#store : cacheFilename=" + cacheFilename);
+            fs.writeFileSync(cacheFilename, jsBody);
+            Console.log("Cache#store : stored cache");
+        };
+        Cache.prototype.createCacheId = function (tsPath, tsBody) {
+            var tsRealPath = fs.realpathSync(tsPath);
+            Console.log("Cache#createCacheId : tsRealPath=" + tsRealPath);
+            var tsFilename = path.basename(tsRealPath);
+            Console.log("Cache#createCacheId : tsFilename=" + tsFilename);
+            var tsRealPathHash = crypto.createHash('sha1').update(tsRealPath).digest('hex');
+            Console.log("Cache#createCacheId : tsRealPathHash=" + tsRealPathHash);
+            var tsBodyHash = crypto.createHash('sha1').update(tsBody).digest('hex');
+            Console.log("Cache#createCacheId : tsBodyHash=" + tsBodyHash);
+            var cacheId = tsFilename + "." + tsRealPathHash + "." + tsBodyHash;
+            Console.log("Cache#createCacheId : cacheId=" + cacheId);
+            return cacheId;
+        };
+        return Cache;
+    })();
+    var TsCompiler = (function () {
+        function TsCompiler() {
+        }
+        TsCompiler.prototype.compile = function (tsPathDir, tsPathFile, tsBody, compilerOptions) {
+            if (compilerOptions === void 0) { compilerOptions = {}; }
+            var self = this;
+            var libFilename = "lib.d.ts";
+            var libSource = fs.readFileSync(path.join(path.dirname(require.resolve('typescript')), libFilename)).toString();
+            var nodeFilename = "node.d.ts";
+            var nodeSource = fs.readFileSync(path.join(__dirname, "../lib/node-0.11.d.ts")).toString();
+            var outputs = {};
+            var compilerHost = {
+                getSourceFile: function (filename, languageVersion) {
+                    Console.log("compilerHost#getSourceFile : filename=" + filename);
+                    Console.log("compilerHost#getSourceFile : languageVersion=" + languageVersion);
+                    var sourceFile = null;
+                    if (filename === tsPathFile + ".ts") {
+                        sourceFile = ts.createSourceFile(filename, tsBody, compilerOptions.target, false);
+                    }
+                    else if (filename === libFilename) {
+                        sourceFile = ts.createSourceFile(filename, libSource, compilerOptions.target, false);
+                    }
+                    else if (filename === nodeFilename) {
+                        sourceFile = ts.createSourceFile(filename, nodeSource, compilerOptions.target, false);
+                    }
+                    else {
+                        sourceFile = self.createSourceFile(tsPathDir, filename, compilerOptions);
+                        if (sourceFile === undefined) {
+                            sourceFile = self.createSourceFile(process.cwd(), filename, compilerOptions);
+                        }
+                    }
+                    Console.log("compilerHost#getSourceFile : sourceFile=" + sourceFile);
+                    return sourceFile;
+                },
+                writeFile: function (name, text, writeByteOrderMark) {
+                    outputs[name] = new CompiledJs(name, text, writeByteOrderMark);
+                },
+                getDefaultLibFileName: function (options) {
+                    return libFilename;
+                },
+                useCaseSensitiveFileNames: function () {
+                    return false;
+                },
+                getCanonicalFileName: function (filename) {
+                    return filename;
+                },
+                getCurrentDirectory: function () {
+                    return "";
+                },
+                getNewLine: function () {
+                    return "\n";
+                }
+            };
+            var program = ts.createProgram([tsPathFile + ".ts"], compilerOptions, compilerHost);
+            var emitResult = program.emit();
+            var allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+            allDiagnostics.forEach(function (diagnostic) {
+                var lineAndCharacter = diagnostic.file.getLineAndCharacterOfPosition(diagnostic.start);
+                var message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+                console.log("${diagnostic.file.fileName} (${lineAndCharacter.line + 1},${lineAndCharacter.character + 1}): ${message}");
+            });
+            var exitCode = emitResult.emitSkipped ? 1 : 0;
+            console.log("Process exiting with code '${exitCode}'.");
+            return outputs;
+        };
+        TsCompiler.prototype.createSourceFile = function (dir, file, compilerOptions) {
+            Console.log("TsCompiler#createSourceFile : dir=" + dir);
+            Console.log("TsCompiler#createSourceFile : file=" + file);
+            Console.log("TsCompiler#createSourceFile : compilerOptions=" + compilerOptions);
+            var sourceFile = null;
+            try {
+                sourceFile = ts.createSourceFile(file, fs.readFileSync(path.join(dir, file)).toString(), compilerOptions.target, false);
+            }
+            catch (e) {
+                if (e.code !== 'ENOENT') {
+                    Console.log("TsCompiler#readTsSource : failed to read ts source \"" + dir + "/" + file + "\" : " + e);
+                    process.exit(1);
+                }
+                else {
+                    Console.log("TsCompiler#readTsSource : ts source \"" + dir + "/" + file + "\" not found");
+                    sourceFile = undefined;
+                }
+            }
+            Console.log("TsCompiler#createSourceFile : sourceFile=" + sourceFile);
+            return sourceFile;
+        };
+        return TsCompiler;
+    })();
+    var CompiledJs = (function () {
+        function CompiledJs(filename, source, writeByteOrderMark) {
+            this.filename = filename;
+            this.source = source;
+            this.writeByteOrderMark = writeByteOrderMark;
+        }
+        CompiledJs.prototype.getFilename = function () {
+            return this.filename;
+        };
+        CompiledJs.prototype.getSource = function () {
+            return this.source;
+        };
+        CompiledJs.prototype.isWriteByteOrderMark = function () {
+            return this.writeByteOrderMark;
+        };
+        return CompiledJs;
+    })();
+})(ShellScriptTs = exports.ShellScriptTs || (exports.ShellScriptTs = {}));
