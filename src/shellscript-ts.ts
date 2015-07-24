@@ -1,11 +1,11 @@
 /// <reference path="../lib/node-0.11.d.ts" />
 /// <reference path="../node_modules/typescript/bin/typescript.d.ts" />
 
-import crypto = require('crypto');
-import fs     = require("fs");
-import path   = require("path");
-import ts     = require("typescript");
-import vm     = require('vm');
+import * as crypto from "crypto";
+import * as fs from "fs";
+import * as path from "path";
+import * as ts from "typescript";
+import * as vm from "vm";
 
 export module ShellScriptTs {
 
