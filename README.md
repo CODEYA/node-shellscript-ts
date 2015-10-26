@@ -7,6 +7,22 @@ A nodejs module for creating shellscript in TypeScript.
 [![npm license](https://img.shields.io/npm/l/shellscript-ts.svg)](https://img.shields.io/npm/l/shellscript-ts.svg)
 [![Dependency Status](https://gemnasium.com/CODEYA/node-shellscript-ts.svg)](https://gemnasium.com/CODEYA/node-shellscript-ts)
 
+# Important
+
+This module is deprecated. It is no longer maintained.
+Please use ES6 on nodejs v4 or later.
+
+```
+#!/usr/bin/env node --use_strict
+
+class HelloWorld {
+  sayHello() {
+    console.log("Hello, World!");
+  }
+}
+new HelloWorld().sayHello();
+```
+
 # Install
 
 With [npm](https://www.npmjs.com/) do:
